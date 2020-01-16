@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: localhost:32000/kubernetes_demo_backend
+          env:
+            - name: MONGODB_URI
+              value: "mongo"
+            - name: FLASK_DEBUG
+              value: "True"
+            - name: SECRET_KEY
+              value: "fnu348nAFmn598TERNK235"
+            - name: RABBITMQ_URL
+              value: "amqp://guest:guest@rabbit:5672/%2F"
+      restartPolicy: Always
