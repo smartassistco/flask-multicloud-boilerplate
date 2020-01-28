@@ -1,0 +1,9 @@
+POSTGRES_URL=postgresql://user:pass@postgres/postgres
+REDIS_URL=redis://redis:6379/0
+SECRET_KEY=fnu348nAFmn598TERNK235
+API_KEY=NzfeUAzw7q8PuWB8
+NEW_RELIC_CONFIG_FILE=/app/newrelic.ini
+
+# Remember to set it to false when using in production
+FLASK_DEBUG=True
+FLASK_TESTING=True

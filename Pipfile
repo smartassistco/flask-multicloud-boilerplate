@@ -4,6 +4,8 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+pytest = "*"
+pytest-docker-compose = "*"
 
 [packages]
 flask = "*"
@@ -12,6 +14,13 @@ flasgger = "*"
 flask-redis = "*"
 pika = "*"
 requests = "*"
+mongoengine = "*"
+flask-sqlalchemy = "*"
+flask-admin = "*"
+flask-migrate = "*"
+sentry-sdk = {extras = ["flask"],version = "*"}
+psycopg2 = "*"
+newrelic = "*"
 
 [requires]
 python_version = "3.6"

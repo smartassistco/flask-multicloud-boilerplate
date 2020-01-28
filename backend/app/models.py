@@ -1,11 +1,13 @@
 import datetime
 
-import flask_mongoengine as mo
-import mongoengine
+import sqlalchemy as sa
+
+from . import db
 
 
-class Task(mo.Document):
-    name = mongoengine.StringField()
-    status = mongoengine.StringField(default='initialized')
-    create_timestamp = mongoengine.DateTimeField(default=datetime.datetime.utcnow)
-    update_timestamp = mongoengine.DateTimeField(default=datetime.datetime.utcnow)
+class Task(db.Model):
+    id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String(64))
+    status = sa.Column(sa.String(16))
+    create_timestamp = sa.Column(sa.DateTime)
+    update_timestamp = sa.Column(sa.DateTime)

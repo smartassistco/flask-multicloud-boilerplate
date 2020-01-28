@@ -1,0 +1,3 @@
+API_SERVER_HOST=http://web:5000
+REDIS_URL=redis://redis:6379/0
+API_KEY=NzfeUAzw7q8PuWB8

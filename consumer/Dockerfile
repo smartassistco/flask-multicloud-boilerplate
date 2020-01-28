@@ -1,4 +1,4 @@
-FROM smartassist/py-consumer:latest
+FROM smartassist/py-consumer:redis
 
 COPY ./consumer/requirements.txt /requirements.txt
 RUN pip install -r requirements.txt

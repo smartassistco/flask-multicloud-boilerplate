@@ -1,13 +1,13 @@
-version: '3'
+version: '3.5'
 services:
   web:
     build:
       args:
         - NEWRELIC_KEY=be0dfbb9908deebe7a6b16d6811a11fb05e9NRAL
-      context: .
+      context: ../..
       dockerfile: ./backend/Dockerfile
     env_file:
-      - ./envs/dev/web
+      - ../../envs/prod/web
     ports:
       - 5000:5000
     depends_on:
@@ -18,19 +18,31 @@ services:
     ports:
       - 6379:6379
     env_file:
-      - ./envs/dev/redis
+      - ../../envs/prod/redis
   postgres:
     image: postgres:alpine
     ports:
       - 5432:5432
     env_file:
-      - ./envs/dev/postgres
+      - ../../envs/prod/postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   consumer:
     build:
-      context: .
+      context: ../..
       dockerfile: ./consumer/Dockerfile
     depends_on:
       - web
     env_file:
-      - ./envs/dev/consumer
+      - ../../envs/prod/consumer
     command: /bin/sh -c "sleep 12; supervisord"
+
+volumes:
+  postgres_data:
+    name: postgres_data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/sdb

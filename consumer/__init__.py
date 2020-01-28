@@ -6,6 +6,7 @@ import time
 import requests
 
 API_SERVER_HOST = os.getenv('API_SERVER_HOST')
+API_KEY = os.getenv('API_KEY')
 
 
 def _handle(message, current_queue, status=None):
@@ -15,14 +16,14 @@ def _handle(message, current_queue, status=None):
     if status:
         data.update(status=status)
     requests.put(API_SERVER_HOST + '/task/{}'.format(task_id),
-                 data=data)  # todo queue ack later only after successful put
+                 data=data, headers={'X-Api-Key': API_KEY})  # todo Send Queue Ack only after a successful PUT
 
 
-def handle_initialized(message, queue_kwargs):
+def handle_initialized(message):
     _handle(message, current_queue='initialized')
 
 
-def handle_processing(message, queue_kwargs):
+def handle_processing(message):
     if random.randint(0, 9) == 9:  # 90% Success 10% Failure
         result = 'failure'
     else:
@@ -34,16 +35,10 @@ CONSUMERS = [
     {
         'queue': 'initialized',
         'handler': handle_initialized,
-        'decode_body': True,
-        # Queue specific variables
-        'auto_ack': True
     },
     {
         'queue': 'processing',
         'handler': handle_processing,
-        'decode_body': True,
-        # Queue specific variables
-        'auto_ack': True
     },
 
 ]

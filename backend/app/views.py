@@ -1,49 +1,33 @@
-import json
+from flask import request
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import NoResultFound
 
-import pika
-from flask import jsonify, request
-from mongoengine import DoesNotExist, OperationError
-from pika.exceptions import ConnectionClosed
-
-from app import app, pika_connection
-from app.models import Task
+from . import app, db
+from .decorators import require_api_key
+from .models import Task
 
 from .config import config
-
-
-def _success_envelope(payload):
-    return jsonify({'status': 1, 'payload': payload})
-
-
-def _error_envelope(error_title, error_message):
-    return jsonify({'status': 0, 'error_title': error_title, 'error_message': error_message})
+from .queue import queue_push
+from .responses import success_envelope, error_envelope
 
 
 def _task_serializer(task: Task):
     return dict(id=str(task.id), name=task.name, status=task.status)
 
 
-def _queue_publish(payload, queue=None):
-    if not queue:
-        return
-
-    global pika_connection
-    try:
-        channel = pika_connection.channel()
-    except:
-        app.logger.info('reconnect')
-        pika_connection = pika.BlockingConnection(pika.URLParameters(config.RABBITMQ_URL))
-        channel = pika_connection.channel()
-
-    channel.basic_publish(exchange='', routing_key=queue, body=json.dumps(payload))
-
-
 @app.route('/tasks', methods=['POST'])
+@require_api_key()
 def add_task():
     """Create a task. The initial status of the 'task' is 'initialized'.
     Also fire an event to the queue for further processing but the consumer.
         ---
+
         parameters:
+          - name: X-Api-Key
+            in: header
+            required: true
+            description: Required API Key. Find the API Key in the Web Env file in the envs folder..
+
           - name: name
             in: query
             type: string
@@ -76,21 +60,27 @@ def add_task():
 
     name = request.values.get('name')
 
-    task = Task(name=name)
-
-    task.save()
+    task = Task(name=name, status='initialized')
+    db.session.add(task)
+    db.session.commit()
 
     # Notify
-    _queue_publish({'task_id': str(task.id)}, queue='initialized')
+    queue_push({'task_id': str(task.id)}, queue='initialized')
 
-    return _success_envelope(_task_serializer(task))
+    return success_envelope(_task_serializer(task))
 
 
 @app.route('/task/<task_id>', methods=['PUT'])
+@require_api_key()
 def update_task(task_id):
     """Update a task. Also used by the queue to update the status of the task.
         ---
         parameters:
+          - name: X-Api-Key
+            in: header
+            required: true
+            description: Required API Key. Find the API Key in the Web Env file in the envs folder..
+
           - name: task_id
             in: path
             type: string
@@ -125,9 +115,9 @@ def update_task(task_id):
     consumer_queue = request.values.get('consumer_queue')
 
     try:
-        task = Task.objects.get(id=task_id)
-    except DoesNotExist:
-        return
+        task = Task.query.get(task_id)
+    except NoResultFound:
+        return error_envelope('DOES NOT EXIST', 'Task does not exist')
 
     if name is not None:
         task.name = name
@@ -141,18 +131,25 @@ def update_task(task_id):
         next_queue = 'processing'
         task.status = 'processing'
 
-    task.save()
+    db.session.commit()
 
     # Notify
-    _queue_publish({'task_id': str(task.id)}, queue=next_queue)
+    queue_push({'task_id': str(task.id)}, queue=next_queue)
 
-    return _success_envelope(_task_serializer(task))
+    return success_envelope(_task_serializer(task))
 
 
 @app.route('/tasks', methods=['GET'])
+@require_api_key()
 def get_tasks():
     """Get a list of tasks.
         ---
+        parameters:
+          - name: X-Api-Key
+            in: header
+            required: true
+            description: Required API Key. Find the API Key in the Web Env file in the envs folder..
+
         definitions:
           TaskSuccessArray:
             type: array
@@ -166,10 +163,11 @@ def get_tasks():
               $ref: '#/definitions/TaskSuccessArray'
 
     """
-    return _success_envelope([_task_serializer(task) for task in list(Task.objects)])
+    return success_envelope([_task_serializer(task) for task in list(Task.query.all())])
 
 
 @app.route('/task/<task_id>', methods=['GET'])
+@require_api_key()
 def get_task(task_id):
     """Get a single task
         ---
@@ -177,6 +175,11 @@ def get_task(task_id):
           - name: task_id
             in: path
             type: string
+            required: true
+            description: Required API Key. Find the API Key in the Web Env file in the envs folder..
+
+          - name: X-Api-Key
+            in: header
             required: true
 
         responses:
@@ -187,14 +190,15 @@ def get_task(task_id):
 
     """
     try:
-        task = Task.objects.get(id=task_id)
-    except DoesNotExist:
-        return _error_envelope(error_title='DOES NOT EXIST', error_message='Task does not exist')
+        task = Task.query.get(task_id)
+    except NoResultFound:
+        return error_envelope(error_title='DOES NOT EXIST', error_message='Task does not exist')
 
-    return _success_envelope(_task_serializer(task))
+    return success_envelope(_task_serializer(task))
 
 
 @app.route('/task/<task_id>', methods=['DELETE'])
+@require_api_key()
 def delete_task(task_id):
     """Delete a single task
         ---
@@ -203,14 +207,19 @@ def delete_task(task_id):
             in: path
             type: string
             required: true
+
+          - name: X-Api-Key
+            in: header
+            required: true
+            description: Required API Key. Find the API Key in the Web Env file in the envs folder..
     """
     try:
-        task = Task.objects.get(id=task_id)
-    except DoesNotExist:
-        return _error_envelope(error_title='DOES NOT EXIST', error_message='Task does not exist')
+        task = Task.query.get(task_id)
+    except NoResultFound:
+        return error_envelope(error_title='DOES NOT EXIST', error_message='Task does not exist')
     try:
-        task.delete()
-    except OperationError:
-        return _error_envelope(error_title='DELETE FAILED', error_message='Delete operation failed')
+        db.session.delete(task)
+    except IntegrityError:
+        return error_envelope(error_title='DELETE FAILED', error_message='Delete operation failed')
 
-    return _success_envelope({})
+    return success_envelope({})

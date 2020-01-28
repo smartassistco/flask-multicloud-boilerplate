@@ -1,0 +1,9 @@
+.idea
+.pytest_cache
+*.pyc
+.env
+.env/
+envs/
+.terraform
+*.tfstate
+*.tfstate.backup
