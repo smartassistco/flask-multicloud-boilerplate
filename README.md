@@ -43,13 +43,13 @@ Git Clone. Pipenv is recommended below.
 pipenv install
 pipenv install -d
 ```
-######OR
+###### OR
 ```
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 ### Get New Relic APM Key.
-#####(Only for DigitalOcean deployment and if you want local monitoring)
+##### (Only for DigitalOcean deployment and if you want local monitoring)
 This boiler plate uses New Relic for Application Monitoring. It has a free Lite Version.
 
 You may register without a card at https://newrelic.com/signup?trial=apm
@@ -79,7 +79,7 @@ If you are using NewRelic APM, find the monitoring dashboard at
 # Deploy to Cloud
 ### DigitalOcean
 
-#####Deployment
+##### Deployment
 Install Terraform from the instructions here https://computingforgeeks.com/how-to-install-terraform-on-ubuntu-centos-7/
 
 Add your DO API Key in the file variables.tf. You also need to have added your credit card in DO. Find/Get your API Key here
@@ -105,7 +105,7 @@ docker-compose -f docker-compose-prod.yml -H ssh://root@$SERVER_IP build
 docker-compose -f docker-compose-prod.yml -H ssh://root@$SERVER_IP up
 ```
 
-#####Troubleshooting:
+##### Troubleshooting:
 Check the public and private key paths in the variables.tf file.
 
 If the same local SSH Key is already added in DigitalOcean you may face an error. Currently the only solution is to
