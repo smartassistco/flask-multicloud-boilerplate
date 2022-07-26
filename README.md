@@ -152,6 +152,5 @@ abhishek@smartassist.tech
 stallon@smartassist.tech
 
 # Author
-Abhishek Jebaraj
-
-abhishekjebaraj@outlook.com
+Abhishek J
+1995.abhishek@gmail.com
